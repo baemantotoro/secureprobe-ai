@@ -62,4 +62,11 @@ tests/unit/test_schema_validation.py
 
 ## 12. 비고
 
-이번 Task는 구현 추가가 아니라 Contract 증명에 집중했다. Production 모델은 유지되었고, 테스트는 실제로 거부되는 입력 사례를 점검하는 방식으로 구성했다.
+이번 Task는 기능 추가가 아니라 Schema Defect Correction과 Contract 증명에 집중했다.
+
+- Production Code Changed: Yes
+- Scope Expansion: No
+- Contract Enforcement Fix: Yes
+- Root Cause: `evidence_ids`가 `default_factory=list`로 채워지면서 필드 누락이 빈 Evidence로 통과하던 문제를 발견했다.
+- Fix: `CandidateFinding.evidence_ids` / `Finding.evidence_ids`를 required contract로 정정했다.
+- Validation Goal: 실제로 거부되는 입력 사례를 점검하고, 보안 traceability를 보장하는지 확인했다.
