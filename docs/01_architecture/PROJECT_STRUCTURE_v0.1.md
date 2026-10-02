@@ -9,6 +9,7 @@ secureprobe-ai/
 ├── .env.example
 ├── docs/
 │   ├── 00_context/
+│   │   └── PROJECT_CONTEXT_v0.1.md
 │   ├── 01_architecture/
 │   │   └── PROJECT_STRUCTURE_v0.1.md
 │   ├── 02_spec/
