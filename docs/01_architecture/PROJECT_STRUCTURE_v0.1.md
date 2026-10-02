@@ -11,15 +11,24 @@ secureprobe-ai/
 │   ├── 00_context/
 │   │   └── PROJECT_CONTEXT_v0.1.md
 │   ├── 01_architecture/
+│   │   ├── ARCHITECTURE_v0.1.md
+│   │   ├── AGENT_FLOW_v0.1.md
 │   │   └── PROJECT_STRUCTURE_v0.1.md
 │   ├── 02_spec/
+│   │   ├── DATA_SCHEMA_v0.1.md
 │   │   └── .gitkeep
 │   ├── 03_wbs/
-│   │   └── .gitkeep
+│   │   └── WBS_20DAYS_v0.1.md
 │   ├── 04_decisions/
 │   │   └── TASK_001_PROJECT_INIT_REPORT.md
 │   ├── 05_ai_development/
-│   │   └── .gitkeep
+│   │   ├── codex_tasks/
+│   │   │   ├── README.md
+│   │   │   └── day01/
+│   │   │       └── D01-T01_VALIDATE_BASELINE_DOCS_v0.1.md
+│   │   └── codex_results/
+│   │       └── day01/
+│   │           └── D01-T01_BASELINE_VALIDATION_v0.1.md
 │   └── 06_test/
 │       └── .gitkeep
 ├── secureboard/
@@ -63,6 +72,9 @@ secureprobe-ai/
 - `README.md`: 프로젝트 개요와 보안 원칙을 설명한다.
 - `.gitignore`: OS, IDE, 환경변수, secret, key, credential 등을 제외한다.
 - `docs/`: 프로젝트 문서, 아키텍처, 명세, 작업계획, 의사결정, AI 개발 이력, 테스트 계획을 관리한다.
+- `docs/05_ai_development/`: AI-assisted Development 과정에서 사용하는 Codex 작업지침과 실행 결과를 관리한다.
+  - `codex_tasks/`: Codex 실행 지침
+  - `codex_results/`: Codex 실행 및 검증 결과
 - `secureboard/`: 자체 보안 테스트용 웹 애플리케이션의 Lab 영역이다.
 - `secureprobe/`: 직접 개발하는 AI 기반 보안진단 Agent 영역이다.
 - `ground_truth/`: 취약점 정답 정보와 비교 평가 기준을 보관한다.

@@ -16,18 +16,14 @@
 
 ```text
 docs/
-├── 04_codex_tasks/
-│   ├── README.md
-│   ├── day01/
-│   │   └── D01-T01_VALIDATE_BASELINE_DOCS_v0.1.md
-│   └── day02/ ...
-└── 05_validation/
-    └── day01/
-        └── D01-T01_BASELINE_VALIDATION_v0.1.md
-```
-
-## 작업 ID 규칙
-
+├── 05_ai_development/
+│   ├── codex_tasks/
+│   │   ├── README.md
+│   │   └── day01/
+│   │       └── D01-T01_VALIDATE_BASELINE_DOCS_v0.1.md
+│   └── codex_results/
+│       └── day01/
+│           └── D01-T01_BASELINE_VALIDATION_v0.1.md
 - 지침 파일: `D{일자 2자리}-T{작업번호 2자리}_{작업명}_v{버전}.md`
 - 검증 결과: 동일 작업 ID를 사용한 결과 문서
 - WBS 원문에서 정의된 순서와 의존성을 유지한다.
@@ -42,10 +38,7 @@ docs/
 ## 실행 예시
 
 ```text
-docs/04_codex_tasks/day01/D01-T01_VALIDATE_BASELINE_DOCS_v0.1.md를 읽고 실행하라.
-저장소의 AGENTS.md와 기준 문서를 준수하고, 결과는 지침에 지정된 검증보고서에 기록하라.
-```
-
+docs/05_ai_development/codex_tasks/day01/D01-T01_VALIDATE_BASELINE_DOCS_v0.1.md를 읽고 실행하라.
 ## 범위
 
 - 작업 지침과 결과 문서를 분리한다.
