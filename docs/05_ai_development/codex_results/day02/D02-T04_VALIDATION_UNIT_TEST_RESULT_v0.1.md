@@ -40,7 +40,7 @@ tests/unit/test_schema_validation.py
 ## 8. 검증 결과
 
 ```text
-8 passed in 0.14s
+70 passed in 0.23s
 ```
 
 ## 9. 실행 명령
@@ -52,7 +52,7 @@ tests/unit/test_schema_validation.py
 ## 10. 전체 회귀 검증
 
 ```text
-27 passed in 0.83s
+97 passed in 0.91s
 ```
 
 ## 11. 결정

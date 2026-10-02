@@ -17,7 +17,9 @@ from secureprobe.models import (
     Severity,
     TestCase,
     ToolDefinition,
+    ToolError,
     ToolExecution,
+    ToolSelection,
     ValidationStatus,
     VerificationRequest,
 )
@@ -443,3 +445,635 @@ def test_json_round_trip_and_whitespace_rules():
             input_schema="{type: object}",
             output_schema="{type: object}",
         )
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "assessment_id",
+        "assessment_type",
+        "status",
+        "target",
+        "started_at",
+    ],
+)
+def test_assessment_result_required_fields(missing_field):
+    payload = {
+        "assessment_id": "AR-200",
+        "assessment_type": "WEB",
+        "status": "CREATED",
+        "target": "https://example.com",
+        "started_at": "2026-10-03T00:00:00Z",
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        AssessmentResult.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "test_id",
+        "category",
+        "target",
+        "reason",
+        "required_capability",
+        "risk_level",
+        "priority",
+    ],
+)
+def test_test_case_required_fields(missing_field):
+    payload = {
+        "test_id": "TC-200",
+        "category": "WEB",
+        "target": "https://example.com",
+        "reason": "Check security headers",
+        "required_capability": "http_client",
+        "risk_level": "ACTIVE",
+        "priority": 1,
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        TestCase.model_validate(payload)
+
+
+def test_tool_selection_validation():
+    valid = {
+        "selection_id": "SEL-001",
+        "test_id": "TC-001",
+        "tool_name": "http_probe",
+        "reason": "Best match",
+        "risk_level": "ACTIVE",
+    }
+    assert ToolSelection.model_validate(valid).tool_name == "http_probe"
+
+    missing = dict(valid)
+    missing.pop("risk_level")
+    with pytest.raises(ValidationError):
+        ToolSelection.model_validate(missing)
+
+    with pytest.raises(ValidationError):
+        ToolSelection.model_validate({**valid, "risk_level": "UNSAFE"})
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "execution_id",
+        "test_id",
+        "tool_name",
+        "status",
+        "started_at",
+    ],
+)
+def test_tool_execution_required_fields(missing_field):
+    payload = {
+        "execution_id": "EX-200",
+        "test_id": "TC-200",
+        "tool_name": "http_probe",
+        "status": "SUCCESS",
+        "started_at": "2026-10-03T00:00:00Z",
+        "output": {},
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        ToolExecution.model_validate(payload)
+
+
+def test_tool_execution_output_type_and_tool_error_validation():
+    with pytest.raises(ValidationError):
+        ToolExecution.model_validate(
+            {
+                "execution_id": "EX-201",
+                "test_id": "TC-201",
+                "tool_name": "http_probe",
+                "status": "SUCCESS",
+                "started_at": "2026-10-03T00:00:00Z",
+                "output": ["invalid"],
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        ToolExecution.model_validate(
+            {
+                "execution_id": "EX-202",
+                "test_id": "TC-202",
+                "tool_name": "http_probe",
+                "status": "SUCCESS",
+                "started_at": "2026-10-03T00:00:00Z",
+                "output": "raw-string",
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        ToolError(code="", message="request timed out", retryable=True)
+    with pytest.raises(ValidationError):
+        ToolError(code="   ", message="request timed out", retryable=True)
+    with pytest.raises(ValidationError):
+        ToolError(code="HTTP_TIMEOUT", message="", retryable=True)
+    with pytest.raises(ValidationError):
+        ToolError(code="HTTP_TIMEOUT", message="   ", retryable=True)
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "evidence_id",
+        "assessment_id",
+        "test_id",
+        "execution_id",
+        "type",
+        "source",
+        "location",
+        "created_at",
+    ],
+)
+def test_evidence_required_fields(missing_field):
+    payload = {
+        "evidence_id": "EV-200",
+        "assessment_id": "RUN-200",
+        "test_id": "TC-200",
+        "execution_id": "EX-200",
+        "type": "response",
+        "source": "http_probe",
+        "location": "https://example.com",
+        "data": {"status_code": 200},
+        "created_at": "2026-10-03T00:00:00Z",
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        Evidence.model_validate(payload)
+
+
+def test_evidence_sensitive_field_rejection():
+    payload = {
+        "evidence_id": "EV-201",
+        "assessment_id": "RUN-201",
+        "test_id": "TC-201",
+        "execution_id": "EX-201",
+        "type": "response",
+        "source": "http_probe",
+        "location": "https://example.com",
+        "data": {"status_code": 200},
+        "created_at": "2026-10-03T00:00:00Z",
+    }
+    for key in ["password", "raw_token", "authorization_header", "api_key", "secret_key"]:
+        with pytest.raises(ValidationError):
+            Evidence.model_validate({**payload, key: "secret-value"})
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "candidate_id",
+        "test_id",
+        "title",
+        "severity",
+        "location",
+        "reasoning_summary",
+    ],
+)
+def test_candidate_finding_required_fields(missing_field):
+    payload = {
+        "candidate_id": "CF-200",
+        "test_id": "TC-200",
+        "title": "Missing security header",
+        "severity": "MEDIUM",
+        "location": "https://example.com",
+        "reasoning_summary": "Header missing",
+        "evidence_ids": ["EV-200"],
+        "verification_required": True,
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        CandidateFinding.model_validate(payload)
+
+
+def test_candidate_finding_evidence_and_severity_validation():
+    with pytest.raises(ValidationError):
+        CandidateFinding.model_validate(
+            {
+                "candidate_id": "CF-201",
+                "test_id": "TC-201",
+                "title": "Missing security header",
+                "severity": "MEDIUM",
+                "location": "https://example.com",
+                "reasoning_summary": "Header missing",
+                "evidence_ids": [],
+                "verification_required": True,
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        CandidateFinding.model_validate(
+            {
+                "candidate_id": "CF-202",
+                "test_id": "TC-202",
+                "title": "Missing security header",
+                "severity": "SEVERE",
+                "location": "https://example.com",
+                "reasoning_summary": "Header missing",
+                "evidence_ids": ["EV-202"],
+                "verification_required": True,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "finding_id",
+        "assessment_id",
+        "test_id",
+        "vulnerability_name",
+        "severity",
+        "assessment_type",
+        "location",
+        "description",
+        "cause",
+        "impact",
+        "remediation",
+        "developer_guide",
+        "ai_reasoning_summary",
+        "validation_status",
+    ],
+)
+def test_finding_required_fields(missing_field):
+    payload = {
+        "finding_id": "F-200",
+        "assessment_id": "RUN-200",
+        "test_id": "TC-200",
+        "vulnerability_name": "Missing Security Headers",
+        "severity": "MEDIUM",
+        "assessment_type": "WEB",
+        "location": "https://example.com",
+        "description": "Headers missing",
+        "cause": "Configuration oversight",
+        "evidence_ids": ["EV-200"],
+        "owasp_mapping": [],
+        "cwe_mapping": [],
+        "impact": "Client default risk",
+        "remediation": "Add recommended headers",
+        "developer_guide": "Document mitigation",
+        "ai_reasoning_summary": "Confirmed by evidence",
+        "validation_status": "TOOL_VERIFIED",
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        Finding.model_validate(payload)
+
+
+def test_finding_invalid_enum_and_mapping_types():
+    with pytest.raises(ValidationError):
+        Finding.model_validate(
+            {
+                "finding_id": "F-201",
+                "assessment_id": "RUN-201",
+                "test_id": "TC-201",
+                "vulnerability_name": "Missing Security Headers",
+                "severity": "SEVERE",
+                "assessment_type": "WEB",
+                "location": "https://example.com",
+                "description": "Headers missing",
+                "cause": "Configuration oversight",
+                "evidence_ids": ["EV-201"],
+                "owasp_mapping": [],
+                "cwe_mapping": [],
+                "impact": "Client default risk",
+                "remediation": "Add recommended headers",
+                "developer_guide": "Document mitigation",
+                "ai_reasoning_summary": "Confirmed by evidence",
+                "validation_status": "TOOL_VERIFIED",
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        Finding.model_validate(
+            {
+                "finding_id": "F-202",
+                "assessment_id": "RUN-202",
+                "test_id": "TC-202",
+                "vulnerability_name": "Missing Security Headers",
+                "severity": "MEDIUM",
+                "assessment_type": "DYNAMIC",
+                "location": "https://example.com",
+                "description": "Headers missing",
+                "cause": "Configuration oversight",
+                "evidence_ids": ["EV-202"],
+                "owasp_mapping": [],
+                "cwe_mapping": [],
+                "impact": "Client default risk",
+                "remediation": "Add recommended headers",
+                "developer_guide": "Document mitigation",
+                "ai_reasoning_summary": "Confirmed by evidence",
+                "validation_status": "TOOL_VERIFIED",
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        Finding.model_validate(
+            {
+                "finding_id": "F-203",
+                "assessment_id": "RUN-203",
+                "test_id": "TC-203",
+                "vulnerability_name": "Missing Security Headers",
+                "severity": "MEDIUM",
+                "assessment_type": "WEB",
+                "location": "https://example.com",
+                "description": "Headers missing",
+                "cause": "Configuration oversight",
+                "evidence_ids": ["EV-203"],
+                "owasp_mapping": "A03:2021-Injection",
+                "cwe_mapping": [],
+                "impact": "Client default risk",
+                "remediation": "Add recommended headers",
+                "developer_guide": "Document mitigation",
+                "ai_reasoning_summary": "Confirmed by evidence",
+                "validation_status": "TOOL_VERIFIED",
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        Finding.model_validate(
+            {
+                "finding_id": "F-204",
+                "assessment_id": "RUN-204",
+                "test_id": "TC-204",
+                "vulnerability_name": "Missing Security Headers",
+                "severity": "MEDIUM",
+                "assessment_type": "WEB",
+                "location": "https://example.com",
+                "description": "Headers missing",
+                "cause": "Configuration oversight",
+                "evidence_ids": ["EV-204"],
+                "owasp_mapping": [],
+                "cwe_mapping": "CWE-89",
+                "impact": "Client default risk",
+                "remediation": "Add recommended headers",
+                "developer_guide": "Document mitigation",
+                "ai_reasoning_summary": "Confirmed by evidence",
+                "validation_status": "TOOL_VERIFIED",
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "event_id",
+        "assessment_id",
+        "event_type",
+        "timestamp",
+        "summary",
+    ],
+)
+def test_agent_event_required_fields(missing_field):
+    payload = {
+        "event_id": "AE-200",
+        "assessment_id": "RUN-200",
+        "event_type": "PLAN_CREATED",
+        "timestamp": "2026-10-03T00:00:00Z",
+        "summary": "Plan created",
+    }
+    payload.pop(missing_field)
+    with pytest.raises(ValidationError):
+        AgentEvent.model_validate(payload)
+
+
+def test_ground_truth_and_benchmark_and_internal_reasoning_rejected():
+    finding_base = {
+        "finding_id": "F-300",
+        "assessment_id": "RUN-300",
+        "test_id": "TC-300",
+        "vulnerability_name": "Missing Security Headers",
+        "severity": "MEDIUM",
+        "assessment_type": "WEB",
+        "location": "https://example.com",
+        "description": "Headers missing",
+        "cause": "Configuration oversight",
+        "evidence_ids": ["EV-300"],
+        "impact": "Client default risk",
+        "remediation": "Add recommended headers",
+        "developer_guide": "Document mitigation",
+        "ai_reasoning_summary": "Confirmed by evidence",
+        "validation_status": "TOOL_VERIFIED",
+    }
+    for key in ["ground_truth_id", "expected_ground_truth", "known_vulnerability"]:
+        with pytest.raises(ValidationError):
+            Finding.model_validate({**finding_base, key: "secret"})
+
+    for key in ["benchmark_result", "zap_result", "semgrep_result"]:
+        with pytest.raises(ValidationError):
+            Finding.model_validate({**finding_base, key: {"status": "ok"}})
+
+    for key in ["chain_of_thought", "full_reasoning", "hidden_reasoning", "internal_reasoning"]:
+        with pytest.raises(ValidationError):
+            CandidateFinding.model_validate(
+                {
+                    "candidate_id": "CF-300",
+                    "test_id": "TC-300",
+                    "title": "Missing security header",
+                    "severity": "MEDIUM",
+                    "location": "https://example.com",
+                    "reasoning_summary": "Header missing",
+                    "evidence_ids": ["EV-300"],
+                    "verification_required": True,
+                    key: "not allowed",
+                }
+            )
+
+
+def test_mutable_defaults_are_isolated_in_agent_models():
+    finding_a = Finding(
+        finding_id="F-400",
+        assessment_id="RUN-400",
+        test_id="TC-400",
+        vulnerability_name="Missing Security Headers",
+        severity=Severity.MEDIUM,
+        assessment_type=AssessmentType.WEB,
+        location="https://example.com",
+        description="Headers missing",
+        cause="Configuration oversight",
+        evidence_ids=["EV-400"],
+        owasp_mapping=["A03:2021-Injection"],
+        cwe_mapping=["CWE-89"],
+        impact="Client default risk",
+        remediation="Add recommended headers",
+        developer_guide="Document mitigation",
+        ai_reasoning_summary="Confirmed by evidence",
+        validation_status=ValidationStatus.TOOL_VERIFIED,
+    )
+    finding_b = Finding(
+        finding_id="F-401",
+        assessment_id="RUN-401",
+        test_id="TC-401",
+        vulnerability_name="Missing Security Headers",
+        severity=Severity.MEDIUM,
+        assessment_type=AssessmentType.WEB,
+        location="https://example.com",
+        description="Headers missing",
+        cause="Configuration oversight",
+        evidence_ids=["EV-401"],
+        owasp_mapping=[],
+        cwe_mapping=[],
+        impact="Client default risk",
+        remediation="Add recommended headers",
+        developer_guide="Document mitigation",
+        ai_reasoning_summary="Confirmed by evidence",
+        validation_status=ValidationStatus.TOOL_VERIFIED,
+    )
+    finding_a.owasp_mapping.append("A05:2021")
+    finding_a.cwe_mapping.append("CWE-693")
+    assert finding_b.owasp_mapping == []
+    assert finding_b.cwe_mapping == []
+
+    evidence_a = Evidence(
+        evidence_id="EV-400",
+        assessment_id="RUN-400",
+        test_id="TC-400",
+        execution_id="EX-400",
+        type="response",
+        source="http_probe",
+        location="https://example.com",
+        data={"status_code": 200},
+        created_at=datetime.now(timezone.utc),
+    )
+    evidence_b = Evidence(
+        evidence_id="EV-401",
+        assessment_id="RUN-401",
+        test_id="TC-401",
+        execution_id="EX-401",
+        type="response",
+        source="http_probe",
+        location="https://example.com",
+        data={},
+        created_at=datetime.now(timezone.utc),
+    )
+    evidence_a.data["status_code"] = 500
+    assert evidence_b.data == {}
+
+
+def test_json_serialization_and_round_trip_for_core_models():
+    request = AssessmentRequest(
+        assessment_type=AssessmentType.WEB,
+        target_url="https://example.com",
+        scope=AssessmentScope(allowed_hosts=["example.com"]),
+        authorization_confirmed=False,
+    )
+    payload = request.model_dump(mode="json")
+    assert payload["assessment_type"] == "WEB"
+    assert AssessmentRequest.model_validate(payload).target_url == "https://example.com"
+
+    finding = Finding(
+        finding_id="F-500",
+        assessment_id="RUN-500",
+        test_id="TC-500",
+        vulnerability_name="Missing Security Headers",
+        severity=Severity.MEDIUM,
+        assessment_type=AssessmentType.WEB,
+        location="https://example.com",
+        description="Headers missing",
+        cause="Configuration oversight",
+        evidence_ids=["EV-500"],
+        owasp_mapping=[],
+        cwe_mapping=[],
+        impact="Client default risk",
+        remediation="Add recommended headers",
+        developer_guide="Document mitigation",
+        ai_reasoning_summary="Confirmed by evidence",
+        validation_status=ValidationStatus.TOOL_VERIFIED,
+    )
+    dumped = finding.model_dump(mode="json")
+    assert dumped["severity"] == "MEDIUM"
+    assert Finding.model_validate(dumped).finding_id == "F-500"
+
+    event = AgentEvent(
+        event_id="AE-500",
+        assessment_id="RUN-500",
+        event_type="PLAN_CREATED",
+        timestamp=datetime.now(timezone.utc),
+        summary="Plan created for the HTTP check",
+    )
+    assert event.model_dump(mode="json")["event_type"] == "PLAN_CREATED"
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["not-a-date", "tomorrow"],
+)
+def test_datetime_validation_for_multiple_models(value):
+    with pytest.raises(ValidationError):
+        Evidence.model_validate(
+            {
+                "evidence_id": "EV-500",
+                "assessment_id": "RUN-500",
+                "test_id": "TC-500",
+                "execution_id": "EX-500",
+                "type": "response",
+                "source": "http_probe",
+                "location": "https://example.com",
+                "data": {"status_code": 200},
+                "created_at": value,
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        AgentEvent.model_validate(
+            {
+                "event_id": "AE-501",
+                "assessment_id": "RUN-500",
+                "event_type": "PLAN_CREATED",
+                "timestamp": value,
+                "summary": "Plan created",
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "field_value",
+    ["   ", ""],
+)
+def test_whitespace_only_values_are_rejected(field_value):
+    with pytest.raises(ValidationError):
+        TestCase(
+            test_id=field_value,
+            category="WEB",
+            target="https://example.com",
+            reason="Check header security",
+            required_capability="http_client",
+            risk_level=RiskLevel.ACTIVE,
+            priority=1,
+        )
+
+    with pytest.raises(ValidationError):
+        ToolDefinition(
+            tool_name=field_value,
+            description="Check HTTP responses",
+            capabilities=["network"],
+            assessment_types=[AssessmentType.WEB],
+            risk_level=RiskLevel.ACTIVE,
+            input_schema="{type: object}",
+            output_schema="{type: object}",
+        )
+
+    with pytest.raises(ValidationError):
+        Finding(
+            finding_id=field_value,
+            assessment_id="RUN-500",
+            test_id="TC-500",
+            vulnerability_name="Missing Security Headers",
+            severity=Severity.MEDIUM,
+            assessment_type=AssessmentType.WEB,
+            location="https://example.com",
+            description="Headers missing",
+            cause="Configuration oversight",
+            evidence_ids=["EV-500"],
+            impact="Client default risk",
+            remediation="Add recommended headers",
+            developer_guide="Document mitigation",
+            ai_reasoning_summary="Confirmed by evidence",
+            validation_status=ValidationStatus.TOOL_VERIFIED,
+        )
+
+    with pytest.raises(ValidationError):
+        ToolError(code=field_value, message="request timed out", retryable=True)
