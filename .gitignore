@@ -1,0 +1,57 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+dist/
+out/
+coverage/
+*.class
+*.jar
+*.war
+*.ear
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Java build outputs
+target/
+.classpath
+.project
+.settings/
+
+# Node / frontend
+node_modules/
+.npm/
+
+# Logs
+*.log
+logs/
+
+# Environment / secrets
+.env
+.env.*
+*.key
+*.pem
+credentials.*
+secrets.*
+
+# Test temporary files
+.tmp/
+.temp/
+*.tmp
+
+# Keep example env file tracked
+!.env.example
