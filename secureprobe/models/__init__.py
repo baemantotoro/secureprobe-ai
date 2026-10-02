@@ -17,6 +17,11 @@ from .enums import (
     Severity,
     ValidationStatus,
 )
+from .evidence import Evidence
+from .event import AgentEvent, AgentEventType
+from .finding import CandidateFinding, Finding, VerificationDecision, VerificationRequest
+from .plan import TestCase, TestPlan
+from .tool import ToolDefinition, ToolError, ToolExecution, ToolSelection
 
 __all__ = [
     "AssessmentType",
@@ -32,4 +37,17 @@ __all__ = [
     "ValidationResult",
     "AssessmentError",
     "AssessmentResult",
+    "TestPlan",
+    "TestCase",
+    "ToolDefinition",
+    "ToolSelection",
+    "ToolExecution",
+    "ToolError",
+    "Evidence",
+    "CandidateFinding",
+    "VerificationRequest",
+    "Finding",
+    "AgentEvent",
+    "AgentEventType",
+    "VerificationDecision",
 ]
