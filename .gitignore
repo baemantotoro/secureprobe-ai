@@ -43,6 +43,7 @@ logs/
 # Environment / secrets
 .env
 .env.*
+.venv/
 *.key
 *.pem
 credentials.*
