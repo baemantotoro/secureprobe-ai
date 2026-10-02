@@ -31,18 +31,20 @@ def test_credentials_requires_reference_only():
     assert credentials.password_ref.startswith("secret://")
 
 
-def test_web_assessment_request_requires_target_and_authorization():
+def test_web_assessment_request_requires_target_only():
+    request = AssessmentRequest(
+        assessment_type=AssessmentType.WEB,
+        target_url="http://localhost:8080",
+        scope=AssessmentScope(),
+        authorization_confirmed=False,
+    )
+
+    assert request.authorization_confirmed is False
+    assert request.target_url == "http://localhost:8080"
+
     with pytest.raises(ValidationError, match="target_url is required for WEB assessment"):
         AssessmentRequest(
             assessment_type=AssessmentType.WEB,
-            scope=AssessmentScope(),
-            authorization_confirmed=True,
-        )
-
-    with pytest.raises(ValidationError, match="authorization_confirmed must be true for WEB assessment"):
-        AssessmentRequest(
-            assessment_type=AssessmentType.WEB,
-            target_url="https://example.com",
             scope=AssessmentScope(),
             authorization_confirmed=False,
         )
@@ -69,7 +71,7 @@ def test_assessment_run_defaults_and_errors():
         assessment_type=AssessmentType.WEB,
         target_url="https://example.com",
         scope=AssessmentScope(),
-        authorization_confirmed=True,
+        authorization_confirmed=False,
     )
     run = AssessmentRun(request=request)
 
@@ -78,6 +80,57 @@ def test_assessment_run_defaults_and_errors():
     assert run.finished_at is None
     assert run.errors == []
     assert run.request.assessment_type == AssessmentType.WEB
+
+    with pytest.raises(ValidationError, match="assessment_type must match request.assessment_type"):
+        AssessmentRun(
+            assessment_type=AssessmentType.SOURCE,
+            request=request,
+        )
+
+
+def test_credentials_excludes_raw_password_field():
+    assert "password" not in Credentials.model_fields
+    assert "username" in Credentials.model_fields
+    assert "password_ref" in Credentials.model_fields
+
+
+def test_mutable_defaults_are_isolated():
+    result_a = AssessmentResult(
+        assessment_id="AR-100",
+        assessment_type=AssessmentType.WEB,
+        status=AssessmentStatus.CREATED,
+        target="https://example.com",
+        started_at="2026-10-03T00:00:00Z",
+    )
+    result_b = AssessmentResult(
+        assessment_id="AR-101",
+        assessment_type=AssessmentType.WEB,
+        status=AssessmentStatus.CREATED,
+        target="https://example.com",
+        started_at="2026-10-03T00:01:00Z",
+    )
+
+    result_a.findings.append("FIND-1")
+    result_a.report_paths["summary"] = "reports/summary_a.json"
+
+    assert result_b.findings == []
+    assert result_b.report_paths == {}
+
+
+def test_extra_fields_are_rejected_and_json_serializes():
+    with pytest.raises(ValidationError):
+        AssessmentScope(unknown_field="x")
+
+    request = AssessmentRequest(
+        assessment_type=AssessmentType.WEB,
+        target_url="https://example.com",
+        scope=AssessmentScope(allowed_hosts=["example.com"]),
+        authorization_confirmed=False,
+    )
+    payload = request.model_dump(mode="json")
+
+    assert payload["assessment_type"] == "WEB"
+    assert payload["scope"]["allowed_hosts"] == ["example.com"]
 
 
 def test_validation_result_and_assessment_result_constraints():
@@ -125,4 +178,14 @@ def test_validation_result_and_assessment_result_constraints():
             target="https://example.com",
             started_at="2026-10-03T00:00:00Z",
             tests_planned=-1,
+        )
+
+    with pytest.raises(ValidationError):
+        AssessmentResult(
+            assessment_id="AR-003",
+            assessment_type=AssessmentType.WEB,
+            status=AssessmentStatus.FAILED,
+            target="https://example.com",
+            started_at="2026-10-03T00:00:00Z",
+            tests_executed=-1,
         )

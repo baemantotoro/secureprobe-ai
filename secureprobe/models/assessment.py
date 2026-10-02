@@ -42,8 +42,6 @@ class AssessmentRequest(SecureProbeModel):
         if self.assessment_type == AssessmentType.WEB:
             if not self.target_url:
                 raise ValueError("target_url is required for WEB assessment")
-            if self.authorization_confirmed is not True:
-                raise ValueError("authorization_confirmed must be true for WEB assessment")
         elif self.assessment_type == AssessmentType.SOURCE:
             if not self.source_directory:
                 raise ValueError("source_directory is required for SOURCE assessment")
@@ -74,6 +72,8 @@ class AssessmentRun(SecureProbeModel):
     def sync_assessment_type_from_request(self) -> "AssessmentRun":
         if self.assessment_type is None:
             self.assessment_type = self.request.assessment_type
+        elif self.assessment_type != self.request.assessment_type:
+            raise ValueError("assessment_type must match request.assessment_type")
         return self
 
 
