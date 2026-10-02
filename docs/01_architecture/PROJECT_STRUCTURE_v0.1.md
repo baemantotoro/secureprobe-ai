@@ -108,7 +108,8 @@ SecureProbe와 Benchmark Tool은 동일한 테스트 대상을 각각 독립적�
 
 실제 Agent 구조, Tool 선정, 데이터 흐름, API 연결 방식은 이후 설계 문서에서 정의한다.
 
-참고: 현재 작업 환경에는 `docs/00_context/PROJECT_CONTEXT_v0.1.md` 파일이 존재하지 않으므로, 해당 문서가 확보될 때까지는 프로젝트 컨텍스트 문서 항목만 미완료 상태로 간주한다. 나머지 구조와 분리 원칙은 그대로 유지한다.
+`PROJECT_CONTEXT_v0.1.md`는 `docs/00_context/`에 저장되어 있으며,
+SecureProbe AI 프로젝트의 기준 Context 문서로 관리한다.
 
 ## 7. Principle for Minimal Structural Change
 
