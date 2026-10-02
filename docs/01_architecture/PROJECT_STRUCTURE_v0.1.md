@@ -6,14 +6,21 @@
 secureprobe-ai/
 ├── README.md
 ├── .gitignore
+├── .env.example
 ├── docs/
 │   ├── 00_context/
 │   ├── 01_architecture/
+│   │   └── PROJECT_STRUCTURE_v0.1.md
 │   ├── 02_spec/
+│   │   └── .gitkeep
 │   ├── 03_wbs/
+│   │   └── .gitkeep
 │   ├── 04_decisions/
+│   │   └── TASK_001_PROJECT_INIT_REPORT.md
 │   ├── 05_ai_development/
+│   │   └── .gitkeep
 │   └── 06_test/
+│       └── .gitkeep
 ├── secureboard/
 │   └── README.md
 ├── secureprobe/
@@ -23,20 +30,31 @@ secureprobe-ai/
 ├── benchmarks/
 │   ├── README.md
 │   ├── zap/
+│   │   └── .gitkeep
 │   └── semgrep/
+│       └── .gitkeep
 ├── evidence/
 │   ├── web/
+│   │   └── .gitkeep
 │   └── source/
+│       └── .gitkeep
 ├── reports/
 │   ├── secureprobe/
+│   │   └── .gitkeep
 │   ├── benchmark/
+│   │   └── .gitkeep
 │   └── comparison/
+│       └── .gitkeep
 ├── testdata/
 │   ├── web/
+│   │   └── .gitkeep
 │   └── source/
+│       └── .gitkeep
 ├── scripts/
+│   └── .gitkeep
 ├── tests/
-└── docs/01_architecture/PROJECT_STRUCTURE_v0.1.md
+│   └── .gitkeep
+└── .env.example
 ```
 
 ## 2. Top-level Directory Roles
@@ -88,6 +106,8 @@ SecureProbe와 Benchmark Tool은 동일한 테스트 대상을 각각 독립적�
 이번 단계에서는 프로젝트 구조와 책임 분리를 정리하는 초기 골격 생성에 집중한다.
 
 실제 Agent 구조, Tool 선정, 데이터 흐름, API 연결 방식은 이후 설계 문서에서 정의한다.
+
+참고: 현재 작업 환경에는 `docs/00_context/PROJECT_CONTEXT_v0.1.md` 파일이 존재하지 않으므로, 해당 문서가 확보될 때까지는 프로젝트 컨텍스트 문서 항목만 미완료 상태로 간주한다. 나머지 구조와 분리 원칙은 그대로 유지한다.
 
 ## 7. Principle for Minimal Structural Change
 
