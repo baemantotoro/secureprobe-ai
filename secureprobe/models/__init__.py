@@ -1,5 +1,14 @@
 """SecureProbe AI shared model definitions."""
 
+from .assessment import (
+    AssessmentError,
+    AssessmentRequest,
+    AssessmentResult,
+    AssessmentRun,
+    AssessmentScope,
+    Credentials,
+    ValidationResult,
+)
 from .enums import (
     AssessmentStatus,
     AssessmentType,
@@ -16,4 +25,11 @@ __all__ = [
     "ExecutionStatus",
     "ValidationStatus",
     "Severity",
+    "AssessmentScope",
+    "Credentials",
+    "AssessmentRequest",
+    "AssessmentRun",
+    "ValidationResult",
+    "AssessmentError",
+    "AssessmentResult",
 ]
