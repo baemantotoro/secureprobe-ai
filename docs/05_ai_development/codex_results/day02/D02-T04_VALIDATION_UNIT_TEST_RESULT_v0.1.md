@@ -33,14 +33,14 @@ tests/unit/test_schema_validation.py
 
 ## 7. 구현 원칙
 
-- Production Model 파일의 수정 없이 Test만 추가하였다.
-- 현재 구현은 이미 schema validation 계약을 만족하고 있었다.
-- 추가 수정이 필요한 코드 defect는 발견되지 않았다.
+- 초기 단계에서는 Schema 계약이 대부분 만족되었지만, `evidence_ids`가 누락되었을 때 빈 리스트로 대체되는 동작이 보안 계약을 약하게 만들고 있음을 확인했다.
+- 해당 문제는 필드가 기본값을 가지고 있었기 때문에 발생한 모델 계층의 누락이며, 이를 `required` contract로 고정하는 최소 수정으로 해결했다.
+- 보안 계약상 필요한 traceability를 엄격하게 유지하기 위해 Production Model을 정정했다.
 
 ## 8. 검증 결과
 
 ```text
-70 passed in 0.23s
+72 passed in 0.24s
 ```
 
 ## 9. 실행 명령
@@ -52,7 +52,7 @@ tests/unit/test_schema_validation.py
 ## 10. 전체 회귀 검증
 
 ```text
-97 passed in 0.91s
+99 passed in 0.94s
 ```
 
 ## 11. 결정

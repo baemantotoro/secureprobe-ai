@@ -17,6 +17,7 @@ from secureprobe.models import (
     Severity,
     TestCase,
     ToolDefinition,
+    TestPlan,
     ToolError,
     ToolExecution,
     ToolSelection,
@@ -631,6 +632,7 @@ def test_evidence_sensitive_field_rejection():
         "severity",
         "location",
         "reasoning_summary",
+        "evidence_ids",
     ],
 )
 def test_candidate_finding_required_fields(missing_field):
@@ -691,6 +693,7 @@ def test_candidate_finding_evidence_and_severity_validation():
         "location",
         "description",
         "cause",
+        "evidence_ids",
         "impact",
         "remediation",
         "developer_guide",
@@ -881,6 +884,22 @@ def test_ground_truth_and_benchmark_and_internal_reasoning_rejected():
                     key: "not allowed",
                 }
             )
+
+    for key in ["chain_of_thought", "full_reasoning", "hidden_reasoning", "internal_reasoning"]:
+        with pytest.raises(ValidationError):
+            Finding.model_validate({**finding_base, key: "not allowed"})
+
+    with pytest.raises(ValidationError):
+        Finding.model_validate({**finding_base, "validation_status": "CONFIRMED"})
+
+    plan_base = {"plan_id": "PLAN-600", "assessment_id": "RUN-600", "tests": []}
+    for key in ["ground_truth_id", "expected_ground_truth", "known_vulnerability"]:
+        with pytest.raises(ValidationError):
+            TestPlan.model_validate({**plan_base, key: "GT-01"})
+
+    for key in ["benchmark_result", "zap_result", "semgrep_result"]:
+        with pytest.raises(ValidationError):
+            TestPlan.model_validate({**plan_base, key: {"status": "ok"}})
 
 
 def test_mutable_defaults_are_isolated_in_agent_models():

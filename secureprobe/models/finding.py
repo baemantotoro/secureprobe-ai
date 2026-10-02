@@ -28,7 +28,7 @@ class CandidateFinding(SecureProbeModel):
     severity: Severity
     location: str = Field(min_length=1)
     reasoning_summary: str = Field(min_length=1)
-    evidence_ids: list[str] = Field(default_factory=list, min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
     verification_required: bool = False
 
 
@@ -51,7 +51,7 @@ class Finding(SecureProbeModel):
     location: str = Field(min_length=1)
     description: str = Field(min_length=1)
     cause: str = Field(min_length=1)
-    evidence_ids: list[str] = Field(default_factory=list, min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
     owasp_mapping: list[str] = Field(default_factory=list)
     cwe_mapping: list[str] = Field(default_factory=list)
     impact: str = Field(min_length=1)
