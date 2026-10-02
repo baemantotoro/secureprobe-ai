@@ -21,6 +21,7 @@ from .evidence import Evidence
 from .event import AgentEvent, AgentEventType
 from .finding import CandidateFinding, Finding, VerificationDecision, VerificationRequest
 from .plan import TestCase, TestPlan
+from .target import Endpoint, EndpointParameter
 from .tool import ToolDefinition, ToolError, ToolExecution, ToolSelection
 
 __all__ = [
@@ -39,6 +40,8 @@ __all__ = [
     "AssessmentResult",
     "TestPlan",
     "TestCase",
+    "Endpoint",
+    "EndpointParameter",
     "ToolDefinition",
     "ToolSelection",
     "ToolExecution",
