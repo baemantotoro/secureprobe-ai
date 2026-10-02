@@ -65,8 +65,87 @@ tests/unit/test_schema_validation.py
 이번 Task는 기능 추가가 아니라 Schema Defect Correction과 Contract 증명에 집중했다.
 
 - Production Code Changed: Yes
+- Changed File: `secureprobe/models/finding.py`
+- Change Type: Schema Defect Correction
 - Scope Expansion: No
 - Contract Enforcement Fix: Yes
 - Root Cause: `evidence_ids`가 `default_factory=list`로 채워지면서 필드 누락이 빈 Evidence로 통과하던 문제를 발견했다.
 - Fix: `CandidateFinding.evidence_ids` / `Finding.evidence_ids`를 required contract로 정정했다.
+- Required Contract: 두 필드에 `Field(min_length=1)`을 적용하여 필드 누락과 빈 Evidence 목록을 모두 거부한다.
 - Validation Goal: 실제로 거부되는 입력 사례를 점검하고, 보안 traceability를 보장하는지 확인했다.
+
+## 13. Security Contract
+
+- Raw Password Injection: PASS
+- Evidence-less Candidate: PASS
+- Evidence-less Finding: PASS
+- Missing Candidate evidence_ids: PASS
+- Missing Finding evidence_ids: PASS
+- Invalid Finding validation_status: PASS
+- Ground Truth Leakage: PASS
+- Benchmark Leakage: PASS
+- Internal Reasoning Injection: PASS
+- Extra Field Rejection: PASS
+
+## 14. Validation Coverage
+
+- Invalid Enum / Literal: PASS
+- Required Field Validation: PASS
+- Boundary Validation: PASS
+- Malformed Payload: PASS
+- Extra Field Rejection: PASS
+- Sensitive Field Injection: PASS
+- Evidence Traceability: PASS
+- Ground Truth Leakage: PASS
+- Benchmark Leakage: PASS
+- Internal Reasoning Injection: PASS
+- JSON Serialization: PASS
+- JSON Round-trip: PASS
+- Mutable Default Isolation: PASS
+- Datetime Validation: PASS
+- Whitespace Validation: PASS
+
+## 15. Import Validation
+
+Import Validation: PASS
+
+```powershell
+.\.venv\Scripts\python.exe -c "from secureprobe.models import AssessmentRequest, AssessmentResult, TestPlan, ToolSelection, ToolExecution, ToolError, Evidence, CandidateFinding, Finding, AgentEvent; print('IMPORT_OK')"
+```
+
+```text
+IMPORT_OK
+```
+
+## 16. Schema Consistency
+
+Schema Consistency: PASS
+
+`docs/02_spec/DATA_SCHEMA_v0.1.md`와 `docs/01_architecture/AGENT_FLOW_v0.1.md`의 D02-T04 확인 항목을 모델 및 기존 검증 테스트와 대조했다.
+
+- `CandidateFinding.evidence_ids` / `Finding.evidence_ids`: 필수이며 빈 목록을 거부한다.
+- ValidationStatus 허용값: `UNVERIFIED`, `TOOL_VERIFIED`, `MANUAL_REQUIRED`, `MANUAL_VERIFIED`, `REJECTED`.
+- Ground Truth: Assessment 입력과 분리하며 추가 필드 주입을 거부한다.
+- Benchmark: Agent 입력과 분리하며 ZAP / Semgrep 결과 필드 주입을 거부한다.
+- Internal reasoning: 내부 추론 필드 주입을 거부하며 짧은 reasoning summary만 허용한다.
+
+## 17. Issues
+
+None
+
+## 18. Day 2 Completion
+
+READY TO CLOSE
+
+```text
+D02-T01 Common Enum        COMPLETED
+D02-T02 Assessment Model   COMPLETED
+D02-T03 Agent Model        COMPLETED
+D02-T04 Validation Test    COMPLETED
+```
+
+이번 결과 문서 최종화에서는 Production Code와 Test Code를 수정하지 않았다.
+
+## 19. Next Task
+
+D03-T01 — SecureBoard Project 생성
