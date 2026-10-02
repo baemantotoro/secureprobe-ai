@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EndpointParameter(BaseModel):
@@ -19,3 +19,23 @@ class Endpoint(BaseModel):
     method: Literal["GET", "POST"]
     source: Literal["current", "link", "form"]
     parameters: list[EndpointParameter] = Field(default_factory=list)
+
+
+class FormField(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    name: str = Field(min_length=1)
+    type: str = Field(min_length=1)
+
+    @field_validator("type")
+    @classmethod
+    def normalize_type(cls, value: str) -> str:
+        return value.lower()
+
+
+class Form(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    action: str = Field(min_length=1)
+    method: Literal["GET", "POST"]
+    fields: list[FormField] = Field(default_factory=list)
