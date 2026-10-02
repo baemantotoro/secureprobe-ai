@@ -31,7 +31,7 @@ docs/03_wbs/WBS_20DAYS_v0.1.md
 2. 문서 경로가 WBS 기준 문서와 일치하는지 검증한다.
 3. AGENTS.md와 저장소 규칙을 준수하는지 확인한다.
 4. 누락된 원문이 있는 경우, 추정 없이 실제 존재 여부만 기록한다.
-5. 결과를 `docs/05_validation/day01/D01-T01_BASELINE_VALIDATION_v0.1.md`에 저장한다.
+5. 결과를 `docs/05_ai_development/codex_results/day01/D01-T01_BASELINE_VALIDATION_v0.1.md`에 저장한다.
 
 ## 5. 확인 항목
 
@@ -52,7 +52,7 @@ docs/03_wbs/WBS_20DAYS_v0.1.md
 검증 결과는 아래 문서에 작성한다.
 
 ```text
-docs/05_validation/day01/D01-T01_BASELINE_VALIDATION_v0.1.md
+docs/05_ai_development/codex_results/day01/D01-T01_BASELINE_VALIDATION_v0.1.md
 ```
 
 ## 8. 완료 기준
