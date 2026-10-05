@@ -39,3 +39,20 @@ class Form(BaseModel):
     action: str = Field(min_length=1)
     method: Literal["GET", "POST"]
     fields: list[FormField] = Field(default_factory=list)
+
+
+class HeaderObservation(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    name: str = Field(min_length=1)
+    present: bool = Field(strict=True)
+    value: str | None = None
+    note: str | None = None
+
+
+class HeaderInspectionResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    url: str = Field(min_length=1)
+    scheme: Literal["http", "https"]
+    observations: list[HeaderObservation] = Field(default_factory=list)
