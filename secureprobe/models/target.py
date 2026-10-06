@@ -56,3 +56,16 @@ class HeaderInspectionResult(BaseModel):
     url: str = Field(min_length=1)
     scheme: Literal["http", "https"]
     observations: list[HeaderObservation] = Field(default_factory=list)
+
+
+class CookieInfo(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    name: str = Field(min_length=1)
+    secure: bool = Field(strict=True)
+    http_only: bool = Field(strict=True)
+    same_site: Literal["Strict", "Lax", "None"] | None = None
+    domain: str | None = None
+    path: str | None = None
+    max_age: int | None = None
+    expires: str | None = None
