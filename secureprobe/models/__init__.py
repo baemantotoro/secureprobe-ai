@@ -21,7 +21,7 @@ from .evidence import Evidence
 from .event import AgentEvent, AgentEventType
 from .finding import CandidateFinding, Finding, VerificationDecision, VerificationRequest
 from .plan import TestCase, TestPlan
-from .target import CookieInfo, Endpoint, EndpointParameter, Form, FormField, HeaderInspectionResult, HeaderObservation
+from .target import CookieInfo, Endpoint, EndpointParameter, Form, FormField, HeaderInspectionResult, HeaderObservation, WebTargetContext
 from .tool import ToolDefinition, ToolError, ToolExecution, ToolSelection
 
 __all__ = [
@@ -47,6 +47,7 @@ __all__ = [
     "HeaderObservation",
     "HeaderInspectionResult",
     "CookieInfo",
+    "WebTargetContext",
     "ToolDefinition",
     "ToolSelection",
     "ToolExecution",

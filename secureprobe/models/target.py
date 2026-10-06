@@ -69,3 +69,19 @@ class CookieInfo(BaseModel):
     path: str | None = None
     max_age: int | None = None
     expires: str | None = None
+
+
+class WebTargetContext(BaseModel):
+    """Passive observations and hints, without raw bodies or cookie values."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    context_id: str = Field(min_length=1)
+    base_url: str = Field(min_length=1)
+    endpoints: list[Endpoint] = Field(default_factory=list)
+    forms: list[Form] = Field(default_factory=list)
+    headers: dict[str, str | None] = Field(default_factory=dict)
+    cookies: list[CookieInfo] = Field(default_factory=list)
+    authentication_detected: bool = Field(default=False, strict=True)
+    session_detected: bool = Field(default=False, strict=True)
+    content_types: list[str] = Field(default_factory=list)
