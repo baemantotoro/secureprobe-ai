@@ -379,3 +379,121 @@ def test_redirect_userinfo_header_not_retained(mock_client):
 def test_invalid_content_length_is_metadata_null(mock_client, length):
     mock_client(lambda request: response(headers={"Content-Length": length}))
     assert execute().output["content_length"] is None
+
+
+def cookie_response(cookie_headers, status=200, location=None):
+    headers = [("Content-Type", "text/html")]
+    headers.extend(("Set-Cookie", header) for header in cookie_headers)
+    if location is not None:
+        headers.append(("Location", location))
+    return httpx.Response(status, headers=headers, stream=Chunks([b"hello"]))
+
+
+def verify_cookie_non_retention(result, secrets, caplog, capsys):
+    # A failed check must not print the serialized execution or raw secrets.
+    captured = capsys.readouterr()
+    serialized = result.model_dump_json()
+    if any(secret in serialized or secret in caplog.text or secret in captured.out or secret in captured.err for secret in secrets):
+        pytest.fail("Cookie secret retention detected", pytrace=False)
+    if "raw_set_cookie" in result.output or "set_cookie_headers" in result.output:
+        pytest.fail("Raw cookie output field detected", pytrace=False)
+
+
+def test_cookie_bridge_no_cookie(mock_client):
+    mock_client(lambda request: response())
+    result = execute()
+    assert result.status == ExecutionStatus.SUCCESS
+    assert result.output["cookies"] == []
+
+
+def test_cookie_bridge_basic_metadata_and_masking(mock_client, caplog, capsys):
+    secret = "bridge-private-cookie-value"
+    mock_client(lambda request: cookie_response([f"SESSION={secret}; Secure; HttpOnly; SameSite=Lax; Path=/"]))
+    result = execute()
+    verify_cookie_non_retention(result, [secret], caplog, capsys)
+    assert result.status == ExecutionStatus.SUCCESS
+    assert result.output["headers"]["set-cookie"] == "***MASKED***"
+    assert result.output["cookies"] == [{
+        "name": "SESSION", "secure": True, "http_only": True, "same_site": "Lax",
+        "domain": None, "path": "/", "max_age": None, "expires": None,
+    }]
+    assert isinstance(result.model_dump(mode="json")["output"]["cookies"][0], dict)
+
+
+def test_cookie_bridge_multiple_headers_and_expires(mock_client, caplog, capsys):
+    secrets = ["bridge-first-private", "bridge-second-private"]
+    mock_client(lambda request: cookie_response([
+        f"SESSION={secrets[0]}; Secure; HttpOnly; Expires=Wed, 21 Oct 2026 07:28:00 GMT",
+        f"theme={secrets[1]}; SameSite=Lax; Path=/",
+    ]))
+    result = execute()
+    verify_cookie_non_retention(result, secrets, caplog, capsys)
+    assert [cookie["name"] for cookie in result.output["cookies"]] == ["SESSION", "theme"]
+    assert result.output["cookies"][0]["expires"] == "Wed, 21 Oct 2026 07:28:00 GMT"
+    assert result.output["headers"]["set-cookie"] == "***MASKED***"
+
+
+def test_cookie_bridge_duplicate_names_and_malformed(mock_client, caplog, capsys):
+    secrets = ["bridge-duplicate-first", "bridge-duplicate-second"]
+    mock_client(lambda request: cookie_response([
+        "broken", f"id={secrets[0]}; Path=/", f"id={secrets[1]}; Path=/admin",
+    ]))
+    result = execute()
+    verify_cookie_non_retention(result, secrets, caplog, capsys)
+    assert result.status == ExecutionStatus.SUCCESS
+    assert [cookie["name"] for cookie in result.output["cookies"]] == ["id", "id"]
+    assert [cookie["path"] for cookie in result.output["cookies"]] == ["/", "/admin"]
+
+
+def test_cookie_bridge_all_malformed_keeps_http_success(mock_client):
+    mock_client(lambda request: cookie_response(["broken", "=bad"]))
+    result = execute()
+    assert result.status == ExecutionStatus.SUCCESS
+    assert result.output["cookies"] == []
+
+
+@pytest.mark.parametrize("final_cookie", [False, True])
+def test_cookie_bridge_redirect_final_only_no_replay(mock_client, final_cookie, caplog, capsys):
+    secrets = ["bridge-redirect-private", "bridge-final-private"]
+    def handler(request):
+        if request.url.path == "/start":
+            return cookie_response([f"temp={secrets[0]}"], status=302, location="/final")
+        assert "cookie" not in request.headers
+        return cookie_response([f"SESSION={secrets[1]}; HttpOnly"] if final_cookie else [])
+    calls, _ = mock_client(handler)
+    result = execute(url="http://localhost/start", follow_redirects=True)
+    verify_cookie_non_retention(result, secrets, caplog, capsys)
+    assert result.status == ExecutionStatus.SUCCESS
+    assert [cookie["name"] for cookie in result.output["cookies"]] == (["SESSION"] if final_cookie else [])
+    assert len(calls) == 2
+
+
+def test_cookie_bridge_redirect_disabled_uses_returned_response(mock_client, caplog, capsys):
+    secret = "bridge-unfollowed-private"
+    calls, _ = mock_client(lambda request: cookie_response([f"id={secret}; Secure"], status=302, location="/final"))
+    result = execute()
+    verify_cookie_non_retention(result, [secret], caplog, capsys)
+    assert result.output["cookies"][0]["name"] == "id"
+    assert len(calls) == 1
+
+
+def test_cookie_bridge_unexpected_parser_error_has_no_secret(mock_client, monkeypatch, caplog, capsys):
+    secret = "bridge-parser-private"
+    mock_client(lambda request: cookie_response([f"id={secret}"]))
+    def broken_parser(**kwargs):
+        raise RuntimeError(secret)
+    monkeypatch.setattr(tool, "inspect_cookies", broken_parser)
+    result = execute()
+    verify_cookie_non_retention(result, [secret], caplog, capsys)
+    assert result.status == ExecutionStatus.SUCCESS
+    assert result.error is None
+    assert result.output["cookies"] == []
+    assert result.output["headers"]["set-cookie"] == "***MASKED***"
+
+
+def test_cookie_bridge_errors_also_have_empty_cookie_list(mock_client):
+    calls, _ = mock_client(lambda request: response())
+    result = execute(method="POST")
+    assert result.status == ExecutionStatus.BLOCKED
+    assert result.output["cookies"] == []
+    assert not calls

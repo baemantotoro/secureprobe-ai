@@ -13,6 +13,7 @@ import httpx
 
 from secureprobe.core.safety import _canonical_host, validate_web_target
 from secureprobe.models import AssessmentRequest, ExecutionStatus, ToolError, ToolExecution
+from .cookie_inspector import inspect_cookies
 
 
 _REQUEST_HEADERS = frozenset({
@@ -24,6 +25,17 @@ _SENSITIVE_HEADERS = frozenset({
     "www-authenticate", "x-api-key", "api-key",
 })
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+
+
+def _cookie_metadata(response: httpx.Response) -> list[dict]:
+    try:
+        # Raw headers are transient parser input only, never output/log/error.
+        return [cookie.model_dump(mode="json") for cookie in inspect_cookies(
+            set_cookie_headers=response.headers.get_list("set-cookie"),
+        )]
+    except Exception:
+        # Ancillary parser failures must not expose raw headers or fail HTTP.
+        return []
 
 
 def _host(url: str) -> str:
@@ -114,7 +126,7 @@ async def http_request(
             input=tool_input, status=status, started_at=started_at,
             finished_at=datetime.now(timezone.utc),
             duration_ms=max(0, int((perf_counter() - started) * 1000)),
-            output=output or {},
+            output=output if output is not None else {"cookies": []},
             error=ToolError(code=code, message=message, retryable=retryable) if code else None,
         )
 
@@ -207,6 +219,7 @@ async def http_request(
                         return finish(ExecutionStatus.SUCCESS, output={
                             "status_code": response.status_code,
                             "headers": _response_headers(response),
+                            "cookies": _cookie_metadata(response),
                             "content_type": response.headers.get("content-type"),
                             "body_excerpt": excerpt, "body_truncated": truncated,
                             "content_length": content_length,
